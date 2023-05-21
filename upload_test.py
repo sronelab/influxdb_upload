@@ -25,3 +25,4 @@ for i in range(0, 10000):
         client.close()
 
     sleep(5)
+    print(data)
