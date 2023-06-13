@@ -48,7 +48,7 @@ except: # PicoNotOkError:
 channel = ps.PS5000A_CHANNEL["PS5000A_CHANNEL_A"]
 # enabled = 1
 coupling_type = ps.PS5000A_COUPLING["PS5000A_DC"]
-chARange = ps.PS5000A_RANGE["PS5000A_20V"]
+chARange = ps.PS5000A_RANGE["PS5000A_1V"]
 # analogue offset = 0 V
 status["setChA"] = ps.ps5000aSetChannel(chandle, channel, 1, coupling_type, chARange, 0)
 assert_pico_ok(status["setChA"])
