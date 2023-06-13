@@ -112,7 +112,7 @@ for channel_name in channel_names:
     status[f"setDataBuffers{channel_name}"] = ps.ps3000aSetDataBuffers(chandle, source, ctypes.byref(buffer[f"buffer{channel_name}Max"]), ctypes.byref(buffer[f"buffer{channel_name}Min"]), maxSamples, 0, 0)
     assert_pico_ok(status[f"setDataBuffers{channel_name}"])
 
-    while True:
+while True:
         try:
    
             # Run block capture
@@ -160,7 +160,7 @@ for channel_name in channel_names:
                     data_to_save = data[f"CH{channel_names[ii]}"]
                     write_api.write(db_credential.bucket, db_credential.org, f"MJM,Channel={channel_labels[ii]} data[V]={data_to_save}")
             
-            sleep(180)
+            sleep(10)
         except KeyboardInterrupt:
             break
 
