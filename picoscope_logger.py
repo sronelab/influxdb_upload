@@ -14,18 +14,15 @@ from time import sleep
 
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
-token = "yelabtoken"
-org = "yelab"
-bucket = "quiet_room"
+
+import db_credential
 
 # Create chandle and status ready for use
 chandle = ctypes.c_int16()
 status = {}
 
-# Open 5000 series PicoScope
-resolution =ps.PS3000A_DEVICE_RESOLUTION["PS3000A_DR_14BIT"]
 # Returns handle to chandle for use in future API functions
-status["openunit"] = ps.ps3000aOpenUnit(ctypes.byref(chandle), None, resolution)
+status["openunit"] = ps.ps3000aOpenUnit(ctypes.byref(chandle), None)
 
 try:
     assert_pico_ok(status["openunit"])
@@ -89,8 +86,8 @@ timebase = 2**5
 # segment index = 0
 timeIntervalns = ctypes.c_float()
 returnedMaxSamples = ctypes.c_int32()
-status["getTimebase2"] = ps.ps3000aGetTimebase2(chandle, timebase, maxSamples, ctypes.byref(timeIntervalns), ctypes.byref(returnedMaxSamples), 0)
-assert_pico_ok(status["getTimebase2"])
+status["GetTimebase"] = ps.ps3000aGetTimebase2(chandle, timebase, maxSamples, ctypes.byref(timeIntervalns), 1, ctypes.byref(returnedMaxSamples), 0)
+assert_pico_ok(status["GetTimebase"])
 
 
 # Create buffers ready for assigning pointers for data collection
@@ -115,55 +112,57 @@ for channel_name in channel_names:
     status[f"setDataBuffers{channel_name}"] = ps.ps3000aSetDataBuffers(chandle, source, ctypes.byref(buffer[f"buffer{channel_name}Max"]), ctypes.byref(buffer[f"buffer{channel_name}Min"]), maxSamples, 0, 0)
     assert_pico_ok(status[f"setDataBuffers{channel_name}"])
 
-for ii in range(100):
-    
-    # Run block capture
-    # handle = chandle
-    # number of pre-trigger samples = preTriggerSamples
-    # number of post-trigger samples = PostTriggerSamples
-    # timebase = 8 = 80 ns (see Programmer's guide for mre information on timebases)
-    # time indisposed ms = None (not needed in the example)
-    # segment index = 0
-    # lpReady = None (using ps3000aIsReady rather than ps3000aBlockReady)
-    # pParameter = None
-    status["runBlock"] = ps.ps3000aRunBlock(chandle, preTriggerSamples, postTriggerSamples, timebase, None, 0, None, None)
-    assert_pico_ok(status["runBlock"])
+    while True:
+        try:
+   
+            # Run block capture
+            # handle = chandle
+            # number of pre-trigger samples = preTriggerSamples
+            # number of post-trigger samples = PostTriggerSamples
+            # timebase = 8 = 80 ns (see Programmer's guide for mre information on timebases)
+            # time indisposed ms = None (not needed in the example)
+            # segment index = 0
+            # lpReady = None (using ps3000aIsReady rather than ps3000aBlockReady)
+            # pParameter = None
+            status["runblock"] = ps.ps3000aRunBlock(chandle, preTriggerSamples, postTriggerSamples, timebase, 1, None, 0, None, None)
+            assert_pico_ok(status["runblock"])
 
-    # Check for data collection to finish using ps3000aIsReady
-    ready = ctypes.c_int16(0)
-    check = ctypes.c_int16(0)
-    while ready.value == check.value:
-        status["isReady"] = ps.ps3000aIsReady(chandle, ctypes.byref(ready))
+            # Check for data collection to finish using ps3000aIsReady
+            ready = ctypes.c_int16(0)
+            check = ctypes.c_int16(0)
+            while ready.value == check.value:
+                status["isReady"] = ps.ps3000aIsReady(chandle, ctypes.byref(ready))
 
-    # create overflow loaction
-    overflow = ctypes.c_int16()
-    # create converted type maxSamples
-    cmaxSamples = ctypes.c_int32(maxSamples)
+            # create overflow loaction
+            overflow = ctypes.c_int16()
+            # create converted type maxSamples
+            cmaxSamples = ctypes.c_int32(maxSamples)
 
-    # Retried data from scope to buffers assigned above
-    # handle = chandle
-    # start index = 0
-    # pointer to number of samples = ctypes.byref(cmaxSamples)
-    # downsample ratio = 0
-    # downsample ratio mode = PS3000A_RATIO_MODE_NONE
-    # pointer to overflow = ctypes.byref(overflow))
-    status["getValues"] = ps.ps3000aGetValues(chandle, 0, ctypes.byref(cmaxSamples), 0, 0, 0, ctypes.byref(overflow))
-    assert_pico_ok(status["getValues"])
+            # Retried data from scope to buffers assigned above
+            # handle = chandle
+            # start index = 0
+            # pointer to number of samples = ctypes.byref(cmaxSamples)
+            # downsample ratio = 0
+            # downsample ratio mode = PS3000A_RATIO_MODE_NONE
+            # pointer to overflow = ctypes.byref(overflow))
+            status["getValues"] = ps.ps3000aGetValues(chandle, 0, ctypes.byref(cmaxSamples), 0, 0, 0, ctypes.byref(overflow))
+            assert_pico_ok(status["getValues"])
 
-    # convert ADC counts data to mV
-    data = {}
-    for channel_name in channel_names:
-        data[f"CH{channel_name}"] = adc2mV(buffer[f"buffer{channel_name}Max"], chARange, maxADC)
-    print(data)
+            # convert ADC counts data to mV
+            data = {}
+            for channel_name in channel_names:
+                data[f"CH{channel_name}"] = np.mean(adc2mV(buffer[f"buffer{channel_name}Max"], chARange, maxADC))*1e-3 # in volt
+            print(data)
 
-    with InfluxDBClient(url="http://yesnuffleupagus.colorado.edu:8086/", token=token, org=org) as client:
-        write_api = client.write_api(write_options=SYNCHRONOUS)
-        for ii in range(len(channel_names)):
-            data_to_save = data[f"data{channel_names[ii]}"]
-            write_api.write(bucket, org, f"MJM,Channel={channel_labels[ii]} data[mV]={data_to_save}")
-    
-    sleep(10)
-
+            with InfluxDBClient(url=db_credential.url, token=db_credential.token, org=db_credential.org) as client:
+                write_api = client.write_api(write_options=SYNCHRONOUS)
+                for ii in range(len(channel_names)):
+                    data_to_save = data[f"CH{channel_names[ii]}"]
+                    write_api.write(db_credential.bucket, db_credential.org, f"MJM,Channel={channel_labels[ii]} data[V]={data_to_save}")
+            
+            sleep(180)
+        except KeyboardInterrupt:
+            break
 
 # Stop the scope
 status["stop"] = ps.ps3000aStop(chandle)
