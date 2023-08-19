@@ -1,0 +1,6 @@
+[program:time_recorder]
+directory=/home/srgang/influxdb_upload/picoscope/test/
+command=/usr/bin/python3 time_recorder.py
+autostart=true
+autorestart=true
+stdout_logfile=/home/srgang/influxdb_upload/picoscope/test/time_recorder.out.log
