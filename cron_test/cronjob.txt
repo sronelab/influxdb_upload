@@ -1,0 +1,1 @@
+* * * * * /usr/bin/python3 /home/srgang/influxdb_upload/cron_test/upload_test.py
