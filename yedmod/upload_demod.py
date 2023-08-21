@@ -89,8 +89,8 @@ def get_voltages():
     assert_pico_ok(status["trigger"])
 
     # Set number of pre and post trigger samples to be collected
-    preTriggerSamples = 250
-    postTriggerSamples = 250
+    preTriggerSamples = 2500
+    postTriggerSamples = 2500
     maxSamples = preTriggerSamples + postTriggerSamples
 
     # Get timebase information
