@@ -15,7 +15,7 @@ from time import sleep
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-import db_credential
+import yedmod.db_credential as db_credential
 
 # Create chandle and status ready for use
 chandle = ctypes.c_int16()
