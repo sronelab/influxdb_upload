@@ -107,7 +107,7 @@ maxSamples = preTriggerSamples + postTriggerSamples
 # pointer to timeIntervalNanoseconds = ctypes.byref(timeIntervalns)
 # pointer to maxSamples = ctypes.byref(returnedMaxSamples)
 # segment index = 0
-timebase = 300
+timebase = 1000
 timeIntervalns = ctypes.c_float()
 returnedMaxSamples = ctypes.c_int32()
 oversample = ctypes.c_int16(1)
@@ -232,14 +232,14 @@ with InfluxDBClient(url=url, token=token, org=org) as client:
 
 
 # # plot data from channel A and B
-# plt.plot(time, adc2mVChEMax[:], label="E")
-# plt.plot(time, adc2mVChFMax[:], label="F")
-# plt.plot(time, adc2mVChGMax[:], label="G")
-# plt.plot(time, adc2mVChHMax[:], label="H")
-# plt.legend()
-# plt.xlabel('Time (ns)')
-# plt.ylabel('Voltage (mV)')
-# plt.show()
+plt.plot(time, adc2mVChEMax[:], label="E")
+plt.plot(time, adc2mVChFMax[:], label="F")
+plt.plot(time, adc2mVChGMax[:], label="G")
+plt.plot(time, adc2mVChHMax[:], label="H")
+plt.legend()
+plt.xlabel('Time (ns)')
+plt.ylabel('Voltage (mV)')
+plt.show()
 
 # display status returns
 print(status)
